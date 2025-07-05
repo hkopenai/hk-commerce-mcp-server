@@ -1,3 +1,10 @@
+"""
+Module for testing MCP client simulation with live server interaction.
+
+This module contains unit tests that simulate client interactions with an MCP server
+to verify the functionality of various tools and server responses.
+"""
+
 import unittest
 import subprocess
 import json
@@ -8,20 +15,32 @@ import asyncio
 import socket
 import logging
 from datetime import datetime, timedelta
+from mcp.client.streamable_http import streamablehttp_client
+from mcp import ClientSession
 
 # Configure logging
 log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
-logging.basicConfig(level=getattr(logging, log_level),
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=getattr(logging, log_level),
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
 logger = logging.getLogger(__name__)
-from mcp.client.streamable_http import streamablehttp_client # Added for MCP SDK communication
-from mcp import ClientSession
 
 
-@unittest.skipUnless(os.environ.get('RUN_LIVE_TESTS') == 'true', "Set RUN_LIVE_TESTS=true to run live tests")
+@unittest.skipUnless(
+    os.environ.get("RUN_LIVE_TESTS") == "true",
+    "Set RUN_LIVE_TESTS=true to run live tests",
+)
 class TestMCPClientSimulation(unittest.TestCase):
+    """
+    Test class for MCP client simulation with live server interaction.
+    
+    This class contains test cases that start an MCP server as a subprocess,
+    simulate client requests over HTTP, and verify the server's responses.
+    Tests are skipped unless the environment variable RUN_LIVE_TESTS is set to 'true'.
+    """
     server_process = None
-    SERVER_URL = "http://127.0.0.1:8000/mcp/" # Updated server URL for MCP API
+    SERVER_URL = "http://127.0.0.1:8000/mcp/"  # Updated server URL for MCP API
 
     # Need a fresh mcp server to avoid lock up
     def setUp(self):
@@ -32,11 +51,13 @@ class TestMCPClientSimulation(unittest.TestCase):
             # No stdin/stdout/stderr pipes needed for HTTP communication, but keep for server logs
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
         )
-        logger.debug("MCP server subprocess started. Giving it a moment to start up and listen on HTTP...")
+        logger.debug(
+            "MCP server subprocess started. Giving it a moment to start up and listen on HTTP..."
+        )
         # Give the server a moment to start up and listen on the port
-        time.sleep(5) # Increased sleep time for server to fully initialize HTTP server
+        time.sleep(5)  # Increased sleep time for server to fully initialize HTTP server
 
         # Check if the server is actually listening on the port
         for _ in range(10):
@@ -64,7 +85,7 @@ class TestMCPClientSimulation(unittest.TestCase):
             if self.server_process.poll() is None:
                 logger.debug("Tear down complete.")
                 self.server_process.kill()
-            
+
             # Print any remaining stderr output from the server process
             if self.server_process.stdout:
                 self.server_process.stdout.close()
@@ -78,7 +99,11 @@ class TestMCPClientSimulation(unittest.TestCase):
             logger.info("Tear down complete.")
 
     async def _call_tool_and_assert(self, tool_name, params):
-        async with streamablehttp_client(self.SERVER_URL) as (read_stream, write_stream, _):
+        async with streamablehttp_client(self.SERVER_URL) as (
+            read_stream,
+            write_stream,
+            _,
+        ):
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
                 response = await session.call_tool(tool_name, params)
@@ -86,14 +111,38 @@ class TestMCPClientSimulation(unittest.TestCase):
 
                 json_text = response.content[0].text if response.content else "{}"
                 data = json.loads(json_text)
-                self.assertIsInstance(data, (dict, list), f"Result for {tool_name} should be a dictionary or list")
+                self.assertIsInstance(
+                    data,
+                    (dict, list),
+                    f"Result for {tool_name} should be a dictionary or list",
+                )
                 if isinstance(data, dict):
-                    self.assertNotIn("error", data, f"Result for {tool_name} should not contain an error: {data.get('error')}")
+                    self.assertNotIn(
+                        "error",
+                        data,
+                        f"Result for {tool_name} should not contain an error: {data.get('error')}",
+                    )
                 elif isinstance(data, list) and data and isinstance(data[0], dict):
-                    self.assertNotIn("error", data[0], f"Result for {tool_name} should not contain an error: {data[0].get('error')}")
+                    self.assertNotIn(
+                        "error",
+                        data[0],
+                        f"Result for {tool_name} should not contain an error: {data[0].get('error')}",
+                    )
                 return data
 
     def test_get_hotel_occupancy_rates_tool(self):
+        """
+        Test the 'get_hotel_occupancy_rates' tool by calling it with a date range.
+        
+        This test starts an MCP server, sends a request for hotel occupancy rates
+        for the past year up to the current year, and verifies that the response
+        is a valid dictionary or list without errors.
+        """
         logger.debug("Testing 'get_hotel_occupancy_rates' tool...")
         current_year = datetime.now().year
-        asyncio.run(self._call_tool_and_assert("get_hotel_occupancy_rates", {"start_year": current_year - 1, "end_year": current_year}))
+        asyncio.run(
+            self._call_tool_and_assert(
+                "get_hotel_occupancy_rates",
+                {"start_year": current_year - 1, "end_year": current_year},
+            )
+        )
