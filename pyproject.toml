@@ -18,7 +18,7 @@ repository = "https://github.com/hkopenai/hk-commerce-mcp-server.git"
 [project]
 name = "hkopenai.hk_commerce_mcp_server"
 version = "0.1.8"
-description = "Hong Kong commerce MCP Server providing commerce data tools"
+description = "Hong Kong commerce data MCP Server providing commerce-related data tools"
 readme = "README.md"
 requires-python = ">=3.7"
 authors = [
@@ -30,7 +30,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "fastmcp>=0.1.0",
+    "fastmcp>=2.10.2",
     "requests>=2.31.0",
     "pytest>=8.2.0",
     "pytest-cov>=6.1.1",
