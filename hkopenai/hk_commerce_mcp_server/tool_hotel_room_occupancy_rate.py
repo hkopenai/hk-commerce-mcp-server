@@ -16,10 +16,18 @@ from io import StringIO
 def fetch_hotel_occupancy_data() -> List[Dict]:
     """Fetch hotel occupancy data from Culture, Sports and Tourism Bureau"""
     url = "https://www.tourism.gov.hk/datagovhk/hotelroomoccupancy/hotel_room_occupancy_rate_monthly_en.csv"
-    response = requests.get(url)
-    csv_data = StringIO(response.text)
-    reader = csv.DictReader(csv_data)
-    return list(reader)
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        csv_data = StringIO(response.text)
+        reader = csv.DictReader(csv_data)
+        return list(reader)
+    except requests.exceptions.RequestException as e:
+        # Handle network errors or invalid HTTP responses
+        return {"error": f"Failed to fetch data from {url}: {e}"}
+    except Exception as e:
+        # Handle other potential errors during CSV processing
+        return {"error": f"An unexpected error occurred during data processing: {e}"}
 
 
 def get_hotel_occupancy_rates(
