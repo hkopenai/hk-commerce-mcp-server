@@ -26,18 +26,14 @@ class TestHotelRoomOccupancyRate(unittest.TestCase):
         This test verifies that the function correctly filters data by year range,
         returns empty results for non-matching years, and handles partial year matches.
         """
-        # Mock the CSV data
-        mock_csv_data = """Year-Month,Hotel_room_occupancy_rate(%)
-2019-01,91.0
-2019-02,92.0
-2020-01,80.0"""
 
-        with patch("requests.get") as mock_requests_get:
-            # Setup mock response
-            mock_response = MagicMock()
-            mock_response.text = mock_csv_data
-            mock_response.raise_for_status.return_value = None
-            mock_requests_get.return_value = mock_response
+
+        with patch("hkopenai.hk_commerce_mcp_server.tool_hotel_room_occupancy_rate.fetch_hotel_occupancy_data") as mock_fetch_data:
+            mock_fetch_data.return_value = [
+                {"Year-Month": "2019-01", "Hotel_room_occupancy_rate(%)": "91.0"},
+                {"Year-Month": "2019-02", "Hotel_room_occupancy_rate(%)": "92.0"},
+                {"Year-Month": "2020-01", "Hotel_room_occupancy_rate(%)": "80.0"},
+            ]
 
             # Test filtering by year range
             result = _get_hotel_occupancy_rates(2019, 2019)
@@ -89,3 +85,4 @@ class TestHotelRoomOccupancyRate(unittest.TestCase):
         ) as mock_get_hotel_occupancy_rates:
             decorated_function(start_year=2018, end_year=2019)
             mock_get_hotel_occupancy_rates.assert_called_once_with(2018, 2019)
+

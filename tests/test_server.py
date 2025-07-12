@@ -41,7 +41,6 @@ class TestApp(unittest.TestCase):
         # Verify server creation
         mock_fastmcp.assert_called_once()
         mock_register.assert_called_once_with(mock_server)
-        
 
 
 if __name__ == "__main__":

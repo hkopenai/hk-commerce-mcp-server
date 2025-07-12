@@ -5,12 +5,13 @@ This module provides functions to retrieve hotel occupancy data from an external
 source and filter it based on specified year ranges for use in the MCP server.
 """
 
+import csv
+import io
+from typing import Dict, List
+
 import requests
-from typing import List, Dict
 from pydantic import Field
 from typing_extensions import Annotated
-import csv
-from io import StringIO
 
 
 def register(mcp):
@@ -38,15 +39,13 @@ def fetch_hotel_occupancy_data() -> List[Dict]:
     try:
         response = requests.get(url)
         response.raise_for_status()  # Raise an exception for HTTP errors
-        csv_data = StringIO(response.text)
+        csv_data = io.StringIO(response.text)
         reader = csv.DictReader(csv_data)
         return list(reader)
     except requests.exceptions.RequestException as e:
-        # Handle network errors or invalid HTTP responses
-        return {"error": f"Failed to fetch data from {url}: {e}"}
+        raise ConnectionError(f"Failed to fetch data from {url}: {e}") from e
     except Exception as e:
-        # Handle other potential errors during CSV processing
-        return {"error": f"An unexpected error occurred during data processing: {e}"}
+        raise RuntimeError(f"An unexpected error occurred during data processing: {e}") from e
 
 
 def _get_hotel_occupancy_rates(

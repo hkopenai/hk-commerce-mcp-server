@@ -6,10 +6,10 @@ commerce-related data queries in Hong Kong, using the FastMCP framework.
 """
 
 import argparse
+
 from fastmcp import FastMCP
+
 from hkopenai.hk_commerce_mcp_server import tool_hotel_room_occupancy_rate
-from typing import Dict, List, Annotated, Optional
-from pydantic import Field
 
 
 def create_mcp_server():
