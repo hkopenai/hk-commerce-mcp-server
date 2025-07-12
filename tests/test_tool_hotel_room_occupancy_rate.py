@@ -1,84 +1,91 @@
 """
-Module for testing hotel room occupancy rate tool functionality.
+Module for testing the hotel room occupancy rate tool.
 
-This module contains unit tests to verify the correct fetching and processing
-of hotel room occupancy data for Hong Kong.
+This module contains unit tests for fetching and filtering hotel room occupancy rate data.
 """
 
 import unittest
-from unittest.mock import patch
-from hkopenai.hk_commerce_mcp_server.tool_hotel_room_occupancy_rate import (
-    fetch_hotel_occupancy_data,
-    get_hotel_occupancy_rates,
-)
+from unittest.mock import patch, MagicMock
+
+from hkopenai.hk_commerce_mcp_server.tool_hotel_room_occupancy_rate import _get_hotel_occupancy_rates
+from hkopenai.hk_commerce_mcp_server.tool_hotel_room_occupancy_rate import register
 
 
-class TestHotelRoomOccupancy(unittest.TestCase):
+class TestHotelRoomOccupancyRate(unittest.TestCase):
     """
-    Test class for verifying hotel room occupancy rate tool functionality.
-    
-    This class contains test cases to ensure that the data fetching and processing
-    functions for hotel room occupancy rates work as expected with mocked data.
+    Test class for verifying hotel room occupancy rate functionality.
+
+    This class contains test cases to ensure the data fetching and filtering
+    for hotel room occupancy rates work as expected.
     """
-    CSV_DATA = """Year-Month,Hotel_room_occupancy_rate(%)
-202004,34
-202005,37
-202006,44
-202007,49
-202008,50
-202009,52
-202010,55
-202104,40
-202105,45
-202106,60
-202107,65
-202108,70
-202109,75"""
-
-    def setUp(self):
-        self.mock_requests = patch("requests.get").start()
-        mock_response = self.mock_requests.return_value
-        mock_response.text = self.CSV_DATA
-        self.addCleanup(patch.stopall)
-
-    def test_fetch_hotel_occupancy_data(self):
-        """
-        Test fetching hotel room occupancy data.
-        
-        This test verifies that the function fetches data correctly using a mocked
-        HTTP response and checks the structure and content of the returned data.
-        """
-        result = fetch_hotel_occupancy_data()
-        self.assertEqual(len(result), 13)
-        self.assertEqual(result[0]["Year-Month"], "202004")
-        self.assertEqual(result[0]["Hotel_room_occupancy_rate(%)"], "34")
-        self.assertEqual(result[-1]["Year-Month"], "202109")
-        self.assertEqual(result[-1]["Hotel_room_occupancy_rate(%)"], "75")
 
     def test_get_hotel_occupancy_rates(self):
         """
-        Test processing hotel room occupancy rates for specific year ranges.
-        
-        This test verifies that the function correctly filters and returns data
-        for the specified year ranges, including full range, single year 2020,
-        and single year 2021.
+        Test the retrieval and filtering of hotel room occupancy rates.
+
+        This test verifies that the function correctly filters data by year range,
+        returns empty results for non-matching years, and handles partial year matches.
         """
-        # Test full range
-        result = get_hotel_occupancy_rates(2020, 2021)
-        self.assertEqual(len(result), 13)
+        # Mock the CSV data
+        mock_csv_data = """Year-Month,Hotel_room_occupancy_rate(%)
+2019-01,91.0
+2019-02,92.0
+2020-01,80.0"""
 
-        # Test 2020 only
-        result = get_hotel_occupancy_rates(2020, 2020)
-        self.assertEqual(len(result), 7)
-        self.assertEqual(result[0]["year_month"], "202004")
-        self.assertEqual(result[-1]["year_month"], "202010")
+        with patch("requests.get") as mock_requests_get:
+            # Setup mock response
+            mock_response = MagicMock()
+            mock_response.text = mock_csv_data
+            mock_response.raise_for_status.return_value = None
+            mock_requests_get.return_value = mock_response
 
-        # Test 2021 only
-        result = get_hotel_occupancy_rates(2021, 2021)
-        self.assertEqual(len(result), 6)
-        self.assertEqual(result[0]["year_month"], "202104")
-        self.assertEqual(result[-1]["year_month"], "202109")
+            # Test filtering by year range
+            result = _get_hotel_occupancy_rates(2019, 2019)
+            self.assertEqual(len(result), 2)
+            self.assertEqual(result[0]["year_month"], "2019-01")
+            self.assertEqual(result[1]["year_month"], "2019-02")
 
+            # Test empty result for non-matching years
+            result = _get_hotel_occupancy_rates(2021, 2022)
+            self.assertEqual(len(result), 0)
 
-if __name__ == "__main__":
-    unittest.main()
+            # Test partial year match
+            result = _get_hotel_occupancy_rates(2019, 2020)
+            self.assertEqual(len(result), 3)
+
+    def test_register_tool(self):
+        """
+        Test the registration of the get_hotel_occupancy_rates tool.
+
+        This test verifies that the register function correctly registers the tool
+        with the FastMCP server and that the registered tool calls the underlying
+        _get_hotel_occupancy_rates function.
+        """
+        mock_mcp = MagicMock()
+
+        # Call the register function
+        register(mock_mcp)
+
+        # Verify that mcp.tool was called with the correct description
+        mock_mcp.tool.assert_called_once_with(
+            description="Get monthly hotel room occupancy rates in Hong Kong"
+        )
+
+        # Get the mock that represents the decorator returned by mcp.tool
+        mock_decorator = mock_mcp.tool.return_value
+
+        # Verify that the mock decorator was called once (i.e., the function was decorated)
+        mock_decorator.assert_called_once()
+
+        # The decorated function is the first argument of the first call to the mock_decorator
+        decorated_function = mock_decorator.call_args[0][0]
+
+        # Verify the name of the decorated function
+        self.assertEqual(decorated_function.__name__, "get_hotel_occupancy_rates")
+
+        # Call the decorated function and verify it calls _get_hotel_occupancy_rates
+        with patch(
+            "hkopenai.hk_commerce_mcp_server.tool_hotel_room_occupancy_rate._get_hotel_occupancy_rates"
+        ) as mock_get_hotel_occupancy_rates:
+            decorated_function(start_year=2018, end_year=2019)
+            mock_get_hotel_occupancy_rates.assert_called_once_with(2018, 2019)

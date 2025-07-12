@@ -13,6 +13,25 @@ import csv
 from io import StringIO
 
 
+def register(mcp):
+    """Registers the hotel room occupancy rate tool with the FastMCP server."""
+    @mcp.tool(description="Get monthly hotel room occupancy rates in Hong Kong")
+    def get_hotel_occupancy_rates(
+        start_year: Annotated[int, Field(description="Start year for data range")],
+        end_year: Annotated[int, Field(description="End year for data range")],
+    ) -> List[Dict]:
+        """Get monthly hotel room occupancy rates in Hong Kong
+
+        Args:
+            start_year: First year to include in results
+            end_year: Last year to include in results
+
+        Returns:
+            List of monthly occupancy rates with year-month and percentage
+        """
+        return _get_hotel_occupancy_rates(start_year, end_year)
+
+
 def fetch_hotel_occupancy_data() -> List[Dict]:
     """Fetch hotel occupancy data from Culture, Sports and Tourism Bureau"""
     url = "https://www.tourism.gov.hk/datagovhk/hotelroomoccupancy/hotel_room_occupancy_rate_monthly_en.csv"
@@ -30,7 +49,7 @@ def fetch_hotel_occupancy_data() -> List[Dict]:
         return {"error": f"An unexpected error occurred during data processing: {e}"}
 
 
-def get_hotel_occupancy_rates(
+def _get_hotel_occupancy_rates(
     start_year: Annotated[int, Field(description="Start year for data range")],
     end_year: Annotated[int, Field(description="End year for data range")],
 ) -> List[Dict]:

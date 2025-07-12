@@ -21,14 +21,7 @@ def create_mcp_server():
     """
     mcp = FastMCP(name="HK OpenAI commerce Server")
 
-    @mcp.tool(description="Get monthly hotel room occupancy rates in Hong Kong")
-    def get_hotel_occupancy_rates(
-        start_year: Annotated[int, Field(description="Start year for data range")],
-        end_year: Annotated[int, Field(description="End year for data range")],
-    ) -> List[Dict]:
-        return tool_hotel_room_occupancy_rate.get_hotel_occupancy_rates(
-            start_year, end_year
-        )
+    tool_hotel_room_occupancy_rate.register(mcp)
 
     return mcp
 
