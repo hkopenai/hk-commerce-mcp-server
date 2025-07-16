@@ -7,8 +7,10 @@ This module contains unit tests for fetching and filtering hotel room occupancy 
 import unittest
 from unittest.mock import patch, MagicMock
 
-from hkopenai.hk_commerce_mcp_server.tool_hotel_room_occupancy_rate import _get_hotel_occupancy_rates
-from hkopenai.hk_commerce_mcp_server.tool_hotel_room_occupancy_rate import register
+from hkopenai.hk_commerce_mcp_server.tools.hotel_room_occupancy_rate import (
+    _get_hotel_occupancy_rates,
+)
+from hkopenai.hk_commerce_mcp_server.tools.hotel_room_occupancy_rate import register
 
 
 class TestHotelRoomOccupancyRate(unittest.TestCase):
@@ -27,9 +29,10 @@ class TestHotelRoomOccupancyRate(unittest.TestCase):
         returns empty results for non-matching years, and handles partial year matches.
         """
 
-
-        with patch("hkopenai.hk_commerce_mcp_server.tool_hotel_room_occupancy_rate.fetch_hotel_occupancy_data") as mock_fetch_data:
-            mock_fetch_data.return_value = [
+        with patch(
+            "hkopenai.hk_commerce_mcp_server.tools.hotel_room_occupancy_rate.fetch_csv_from_url"
+        ) as mock_fetch_csv_from_url:
+            mock_fetch_csv_from_url.return_value = [
                 {"Year-Month": "2019-01", "Hotel_room_occupancy_rate(%)": "91.0"},
                 {"Year-Month": "2019-02", "Hotel_room_occupancy_rate(%)": "92.0"},
                 {"Year-Month": "2020-01", "Hotel_room_occupancy_rate(%)": "80.0"},
@@ -81,8 +84,7 @@ class TestHotelRoomOccupancyRate(unittest.TestCase):
 
         # Call the decorated function and verify it calls _get_hotel_occupancy_rates
         with patch(
-            "hkopenai.hk_commerce_mcp_server.tool_hotel_room_occupancy_rate._get_hotel_occupancy_rates"
+            "hkopenai.hk_commerce_mcp_server.tools.hotel_room_occupancy_rate._get_hotel_occupancy_rates"
         ) as mock_get_hotel_occupancy_rates:
             decorated_function(start_year=2018, end_year=2019)
             mock_get_hotel_occupancy_rates.assert_called_once_with(2018, 2019)
-
