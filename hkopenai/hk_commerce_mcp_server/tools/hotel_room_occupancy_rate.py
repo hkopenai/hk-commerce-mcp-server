@@ -48,6 +48,10 @@ def _get_hotel_occupancy_rates(
     """
     url = "https://www.tourism.gov.hk/datagovhk/hotelroomoccupancy/hotel_room_occupancy_rate_monthly_en.csv"
     data = fetch_csv_from_url(url)
+
+    if "error" in data:
+        return data
+
     filtered_data = []
     for row in data:
         year = int(row["Year-Month"][:4])
