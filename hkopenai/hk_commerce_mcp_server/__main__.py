@@ -5,7 +5,7 @@ This module handles command-line arguments and initiates the main server functio
 """
 
 from hkopenai_common.cli_utils import cli_main
-from .server import main
+from .server import server
 
 if __name__ == "__main__":
     cli_main(main, "HK Commerce MCP Server")
