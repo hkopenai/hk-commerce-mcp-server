@@ -9,7 +9,7 @@ import argparse
 
 from fastmcp import FastMCP
 
-from hkopenai.hk_commerce_mcp_server.tools import hotel_room_occupancy_rate
+from .tools import hotel_room_occupancy_rate
 
 
 def server():
